@@ -16,16 +16,16 @@ export const PreviewComparison: React.FC<PreviewComparisonProps> = ({
   if (!svgContent) return null;
 
   // Default theme for original preview (neutral colors)
-  const originalTheme: Theme = {
-    id: "original",
-    name: "Original",
-    variables: {
-      "--text-color": "#000000",
-      "--wire-color": "#000000",
-      "--part-color": "#000000",
-      "--background-color": "#ffffff",
-    },
-  };
+  // const originalTheme: Theme = {
+  //   id: "original",
+  //   name: "Original",
+  //   variables: {
+  //     "--text-color": "#000000",
+  //     "--wire-color": "#000000",
+  //     "--part-color": "#000000",
+  //     "--background-color": "#ffffff",
+  //   },
+  // };
 
   // No margins for original preview
   const noMargins: Margins = { top: 0, right: 0, bottom: 0, left: 0 };

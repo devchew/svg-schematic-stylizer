@@ -18,11 +18,11 @@ export const downloadStyledSvg = async (
     const totalHeight = naturalDimensions.height + margins.top + margins.bottom;
 
     // Render SVG to canvas at high resolution
-    const canvas = await renderSvgToCanvas(svgContent, selectedTheme, margins, {
+    const canvas = await renderSvgToCanvas(svgContent, margins, {
       width: totalWidth,
       height: totalHeight,
       scale: 2, // High DPI for better quality
-    });
+    }, selectedTheme);
 
     // Convert canvas to blob and download
     canvas.toBlob(

@@ -7,7 +7,7 @@ import type { Theme, Margins } from "../types";
 
 interface CanvasSvgRendererProps {
   svgContent: string;
-  theme: Theme;
+  theme?: Theme;
   margins: Margins;
   className?: string;
   maxWidth?: number;
@@ -56,13 +56,14 @@ export const CanvasSvgRenderer: React.FC<CanvasSvgRendererProps> = ({
         // Render SVG to canvas
         const renderedCanvas = await renderSvgToCanvas(
           svgContent,
-          theme,
           margins,
           {
             width: totalWidth,
             height: totalHeight,
             scale: 2, // Higher resolution for crisp display
-          }
+          },
+          
+          theme,
         );
 
         // Update the display canvas

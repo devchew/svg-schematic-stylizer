@@ -9,12 +9,12 @@ export interface CanvasRenderOptions {
 
 export const renderSvgToCanvas = async (
   svgContent: string,
-  theme: Theme,
   margins: Margins,
-  options: CanvasRenderOptions
+  options: CanvasRenderOptions,
+  theme?: Theme
 ): Promise<HTMLCanvasElement> => {
   const { width, height, scale = 1, backgroundColor } = options;
-  
+
   // Create canvas
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
@@ -28,19 +28,26 @@ export const renderSvgToCanvas = async (
   ctx.scale(scale, scale);
 
   // Fill background
-  const bgColor = backgroundColor || theme.variables["--background-color"];
+  const bgColor =
+    backgroundColor || theme?.variables["--background-color"] || "transparent";
   ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, width, height);
 
   // Create styled SVG
-  const styledSvg = createStyledSvgForCanvas(svgContent, theme, {
-    width: width - margins.left - margins.right,
-    height: height - margins.top - margins.bottom,
-  });
+  const styledSvg = createStyledSvgForCanvas(
+    svgContent,
+    {
+      width: width - margins.left - margins.right,
+      height: height - margins.top - margins.bottom,
+    },
+    theme
+  );
 
   // Create image from SVG
   const img = new Image();
-  const svgBlob = new Blob([styledSvg], { type: "image/svg+xml;charset=utf-8" });
+  const svgBlob = new Blob([styledSvg], {
+    type: "image/svg+xml;charset=utf-8",
+  });
   const url = URL.createObjectURL(svgBlob);
 
   return new Promise((resolve, reject) => {
@@ -68,8 +75,8 @@ export const renderSvgToCanvas = async (
 
 export const createStyledSvgForCanvas = (
   svgContent: string,
-  theme: Theme,
-  dimensions: { width: number; height: number }
+  dimensions: { width: number; height: number },
+  theme?: Theme
 ): string => {
   const parser = new DOMParser();
   const doc = parser.parseFromString(svgContent, "image/svg+xml");
@@ -84,20 +91,9 @@ export const createStyledSvgForCanvas = (
   svgElement.setAttribute("height", dimensions.height.toString());
 
   // Directly modify SVG elements instead of relying on CSS
-  applyThemeToElements(doc, theme);
-
-  // For debugging - log what we're modifying (only in development)
-  try {
-    if (import.meta.env.DEV) {
-      console.log("Applied theme to SVG elements:", {
-        textElements: doc.querySelectorAll("text").length,
-        wireElements: doc.querySelectorAll('[c_etype="wire"]').length,
-        junctionElements: doc.querySelectorAll('[c_partid="part_junction"] circle').length,
-        strokeElements: doc.querySelectorAll('[stroke]').length,
-      });
-    }
-  } catch {
-    // Ignore if import.meta is not available
+  if (theme) {
+    // Apply theme styles to SVG elements
+    applyThemeToElements(doc, theme);
   }
 
   return new XMLSerializer().serializeToString(doc);

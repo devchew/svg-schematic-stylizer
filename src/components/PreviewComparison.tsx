@@ -47,7 +47,6 @@ export const PreviewComparison: React.FC<PreviewComparisonProps> = ({
           <h3 className="text-sm font-medium text-gray-700 mb-4">Original</h3>
           <CanvasSvgRenderer
             svgContent={svgContent}
-            theme={originalTheme}
             margins={noMargins}
             className="h-64 sm:h-80"
             maxWidth={400}

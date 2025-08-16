@@ -62,6 +62,66 @@ export const applySvgStyles = (
   return new XMLSerializer().serializeToString(doc);
 };
 
+export const applySvgStylesForDownload = (
+  svgString: string,
+  theme: Theme
+): string => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(svgString, "image/svg+xml");
+  const svgElement = doc.querySelector("svg");
+
+  if (svgElement) {
+    // Apply theme variables as CSS custom properties
+    Object.entries(theme.variables).forEach(([property, value]) => {
+      svgElement.style.setProperty(property, value);
+    });
+
+    // Apply background color but no padding (margins handled in wrapper)
+    svgElement.style.backgroundColor = theme.variables["--background-color"];
+
+    // Apply the styling rules
+    const style = doc.createElement("style");
+    style.textContent = `
+      svg {
+        background-color: var(--background-color);
+      }
+      
+      text {
+        fill: var(--text-color) !important;
+        filter: drop-shadow(1px 0px 8px var(--text-color));
+      }
+      
+      [fill="#FFFFFF"] { 
+        fill: var(--background-color) !important; 
+      }
+      
+      [stroke="#000000"], [stroke="#A54B4B"] { 
+        stroke: var(--part-color) !important; 
+      }
+      
+      [c_etype="wire"] { 
+        stroke: var(--wire-color) !important; 
+      }
+      
+      [stroke="#FF0000"] { 
+        stroke: var(--part-color) !important; 
+      }
+      
+      [c_partid="part_junction"] circle { 
+        fill: var(--wire-color) !important; 
+      }
+      
+      [stroke="#880000"], [stroke="#8D2323"] { 
+        stroke: var(--part-color) !important; 
+      }
+    `;
+
+    svgElement.insertBefore(style, svgElement.firstChild);
+  }
+
+  return new XMLSerializer().serializeToString(doc);
+};
+
 export const getSvgDimensions = (
   svgString: string
 ): { width: number; height: number } => {
@@ -76,10 +136,12 @@ export const getSvgDimensions = (
   let svgWidth = 800;
   let svgHeight = 600;
 
+  // First try to get dimensions from viewBox
   if (svgElement.viewBox && svgElement.viewBox.baseVal) {
     svgWidth = svgElement.viewBox.baseVal.width;
     svgHeight = svgElement.viewBox.baseVal.height;
   } else {
+    // Fallback to width and height attributes
     const width = svgElement.getAttribute("width");
     const height = svgElement.getAttribute("height");
     if (width && height) {
@@ -100,14 +162,64 @@ export const createWrappedSvg = (
   const totalWidth = dimensions.width + margins.left + margins.right;
   const totalHeight = dimensions.height + margins.top + margins.bottom;
 
-  return `
-    <svg width="${totalWidth}" height="${totalHeight}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100%" height="100%" fill="${
-        theme.variables["--background-color"]
-      }"/>
-      <g transform="translate(${margins.left}, ${margins.top})">
-        ${styledSvg.replace(/<svg[^>]*>/, "").replace(/<\/svg>$/, "")}
-      </g>
-    </svg>
-  `;
+  // Parse the styled SVG to get its content
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(styledSvg, "image/svg+xml");
+  const styledSvgElement = doc.querySelector("svg");
+
+  if (!styledSvgElement) {
+    return styledSvg;
+  }
+
+  // Get the inner content and styles from the styled SVG
+  const styledContent = styledSvgElement.innerHTML;
+
+  // Create a new wrapper SVG that properly contains the styled content
+  return `<svg width="${totalWidth}" height="${totalHeight}" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      /* Apply all theme variables */
+      * {
+        --text-color: ${theme.variables["--text-color"]};
+        --wire-color: ${theme.variables["--wire-color"]};
+        --part-color: ${theme.variables["--part-color"]};
+        --background-color: ${theme.variables["--background-color"]};
+      }
+      
+      /* Apply the styling rules */
+      text {
+        fill: var(--text-color) !important;
+        filter: drop-shadow(1px 0px 8px var(--text-color));
+      }
+      
+      [fill="#FFFFFF"] { 
+        fill: var(--background-color) !important; 
+      }
+      
+      [stroke="#000000"], [stroke="#A54B4B"] { 
+        stroke: var(--part-color) !important; 
+      }
+      
+      [c_etype="wire"] { 
+        stroke: var(--wire-color) !important; 
+      }
+      
+      [stroke="#FF0000"] { 
+        stroke: var(--part-color) !important; 
+      }
+      
+      [c_partid="part_junction"] circle { 
+        fill: var(--wire-color) !important; 
+      }
+      
+      [stroke="#880000"], [stroke="#8D2323"] { 
+        stroke: var(--part-color) !important; 
+      }
+    </style>
+  </defs>
+  <rect width="100%" height="100%" fill="${theme.variables["--background-color"]}"/>
+  <g transform="translate(${margins.left}, ${margins.top})">
+    ${styledContent}
+  </g>
+</svg>`;
 };

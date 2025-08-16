@@ -1,76 +1,50 @@
 import type { Theme, Margins } from "../types";
-import { applySvgStyles, getSvgDimensions, createWrappedSvg } from "./svgUtils";
+import { renderSvgToCanvas, getSvgNaturalDimensions } from "./canvasUtils";
 
-export const downloadStyledSvg = (
+export const downloadStyledSvg = async (
   svgContent: string,
   selectedTheme: Theme,
   margins: Margins,
   fileName: string
-): void => {
+): Promise<void> => {
   if (!svgContent) return;
 
-  const styledSvg = applySvgStyles(svgContent, selectedTheme, margins);
-  const dimensions = getSvgDimensions(styledSvg);
-  const wrappedSvg = createWrappedSvg(
-    styledSvg,
-    selectedTheme,
-    margins,
-    dimensions
-  );
+  try {
+    // Get natural SVG dimensions
+    const naturalDimensions = getSvgNaturalDimensions(svgContent);
 
-  // Calculate total dimensions with margins
-  const totalWidth = dimensions.width + margins.left + margins.right;
-  const totalHeight = dimensions.height + margins.top + margins.bottom;
+    // Calculate total dimensions with margins
+    const totalWidth = naturalDimensions.width + margins.left + margins.right;
+    const totalHeight = naturalDimensions.height + margins.top + margins.bottom;
 
-  // Create canvas for PNG conversion
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
+    // Render SVG to canvas at high resolution
+    const canvas = await renderSvgToCanvas(svgContent, selectedTheme, margins, {
+      width: totalWidth,
+      height: totalHeight,
+      scale: 2, // High DPI for better quality
+    });
 
-  // Set high DPI for better quality
-  const scale = 2;
-  canvas.width = totalWidth * scale;
-  canvas.height = totalHeight * scale;
-  ctx.scale(scale, scale);
-
-  // Create image from the wrapped SVG
-  const img = new Image();
-  const svgBlob = new Blob([wrappedSvg], {
-    type: "image/svg+xml;charset=utf-8",
-  });
-  const url = URL.createObjectURL(svgBlob);
-
-  img.onload = () => {
-    // Draw the complete SVG (with background and margins)
-    ctx.drawImage(img, 0, 0, totalWidth, totalHeight);
-
-    // Convert to PNG and download
+    // Convert canvas to blob and download
     canvas.toBlob(
       (blob) => {
         if (blob) {
-          const downloadUrl = URL.createObjectURL(blob);
+          const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
-          a.href = downloadUrl;
+          a.href = url;
           a.download = `${fileName.replace(".svg", "")}_${selectedTheme.name
             .toLowerCase()
             .replace(/\s+/g, "_")}.png`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          URL.revokeObjectURL(downloadUrl);
+          URL.revokeObjectURL(url);
         }
       },
       "image/png",
       0.95
     );
-
-    URL.revokeObjectURL(url);
-  };
-
-  img.onerror = () => {
-    console.error("Failed to load SVG for PNG conversion");
-    URL.revokeObjectURL(url);
-  };
-
-  img.src = url;
+  } catch (error) {
+    console.error("Download failed:", error);
+    throw new Error("Failed to download styled SVG");
+  }
 };

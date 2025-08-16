@@ -7,7 +7,6 @@ import {
 } from "./components";
 import { themes } from "./data/themes";
 import {
-  applySvgStyles,
   downloadStyledSvg,
   validateSvgFile,
   validateSvgContent,
@@ -21,6 +20,7 @@ function App() {
   const [fileName, setFileName] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
+  const [isDownloading, setIsDownloading] = useState<boolean>(false);
   const [margins, setMargins] = useState<Margins>({
     top: 20,
     right: 20,
@@ -78,18 +78,28 @@ function App() {
     setIsDragOver(false);
   };
 
-  const handleDownload = () => {
-    downloadStyledSvg(svgContent, selectedTheme, margins, fileName);
-  };
+  const handleDownload = async () => {
+    if (!svgContent || isDownloading) return;
 
-  const styledSvgContent = svgContent
-    ? applySvgStyles(svgContent, selectedTheme, margins)
-    : "";
+    setIsDownloading(true);
+    try {
+      await downloadStyledSvg(svgContent, selectedTheme, margins, fileName);
+    } catch (err) {
+      setError("Failed to download file. Please try again.");
+      console.error("Download error:", err);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <Header svgContent={svgContent} onDownload={handleDownload} />
+      <Header
+        svgContent={svgContent}
+        onDownload={handleDownload}
+        isDownloading={isDownloading}
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Controls Section */}
@@ -112,8 +122,8 @@ function App() {
         {svgContent && (
           <PreviewComparison
             svgContent={svgContent}
-            styledSvgContent={styledSvgContent}
             selectedTheme={selectedTheme}
+            margins={margins}
           />
         )}
 

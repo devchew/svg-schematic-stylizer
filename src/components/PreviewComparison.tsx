@@ -1,58 +1,34 @@
-import React, { useRef, useEffect } from "react";
-import type { Theme } from "../types";
+import React from "react";
+import { CanvasSvgRenderer } from "./CanvasSvgRenderer";
+import type { Theme, Margins } from "../types";
 
 interface PreviewComparisonProps {
   svgContent: string;
-  styledSvgContent: string;
   selectedTheme: Theme;
+  margins: Margins;
 }
 
 export const PreviewComparison: React.FC<PreviewComparisonProps> = ({
   svgContent,
-  styledSvgContent,
   selectedTheme,
+  margins,
 }) => {
-  const originalIframeRef = useRef<HTMLIFrameElement>(null);
-
-  // Update original iframe content
-  useEffect(() => {
-    if (originalIframeRef.current && svgContent) {
-      const iframe = originalIframeRef.current;
-      const iframeDoc =
-        iframe.contentDocument || iframe.contentWindow?.document;
-      if (iframeDoc) {
-        iframeDoc.open();
-        iframeDoc.write(`
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <style>
-                body { 
-                  margin: 0; 
-                  padding: 20px; 
-                  background: #f9fafb; 
-                  display: flex; 
-                  align-items: center; 
-                  justify-content: center; 
-                  min-height: calc(100vh - 40px);
-                }
-                svg { 
-                  max-width: 100%; 
-                  height: auto; 
-                }
-              </style>
-            </head>
-            <body>
-              ${svgContent}
-            </body>
-          </html>
-        `);
-        iframeDoc.close();
-      }
-    }
-  }, [svgContent]);
-
   if (!svgContent) return null;
+
+  // Default theme for original preview (neutral colors)
+  const originalTheme: Theme = {
+    id: "original",
+    name: "Original",
+    variables: {
+      "--text-color": "#000000",
+      "--wire-color": "#000000",
+      "--part-color": "#000000",
+      "--background-color": "#ffffff",
+    },
+  };
+
+  // No margins for original preview
+  const noMargins: Margins = { top: 0, right: 0, bottom: 0, left: 0 };
 
   return (
     <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
@@ -69,13 +45,14 @@ export const PreviewComparison: React.FC<PreviewComparisonProps> = ({
         {/* Original SVG */}
         <div className="p-4 sm:p-6">
           <h3 className="text-sm font-medium text-gray-700 mb-4">Original</h3>
-          <div className="bg-gray-50 rounded-lg overflow-hidden">
-            <iframe
-              ref={originalIframeRef}
-              className="w-full h-64 sm:h-80 border-0"
-              title="Original SVG Preview"
-            />
-          </div>
+          <CanvasSvgRenderer
+            svgContent={svgContent}
+            theme={originalTheme}
+            margins={noMargins}
+            className="h-64 sm:h-80"
+            maxWidth={400}
+            maxHeight={320}
+          />
         </div>
 
         {/* Styled SVG */}
@@ -83,20 +60,14 @@ export const PreviewComparison: React.FC<PreviewComparisonProps> = ({
           <h3 className="text-sm font-medium text-gray-700 mb-4">
             Styled ({selectedTheme.name})
           </h3>
-          <div
-            className="rounded-lg p-4 overflow-auto h-64 sm:h-80 flex items-center justify-center bg-current"
-            style={
-              {
-                "--bg-color": selectedTheme.variables["--background-color"],
-                backgroundColor: "var(--bg-color)",
-              } as React.CSSProperties
-            }
-          >
-            <div
-              className="max-w-full max-h-full"
-              dangerouslySetInnerHTML={{ __html: styledSvgContent }}
-            />
-          </div>
+          <CanvasSvgRenderer
+            svgContent={svgContent}
+            theme={selectedTheme}
+            margins={margins}
+            className="h-64 sm:h-80"
+            maxWidth={400}
+            maxHeight={320}
+          />
         </div>
       </div>
     </div>

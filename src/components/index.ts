@@ -6,3 +6,4 @@ export { ErrorDisplay } from "./ErrorDisplay";
 export { EmptyState } from "./EmptyState";
 export { PreviewComparison } from "./PreviewComparison";
 export { ControlsPanel } from "./ControlsPanel";
+export { CanvasSvgRenderer } from "./CanvasSvgRenderer";
